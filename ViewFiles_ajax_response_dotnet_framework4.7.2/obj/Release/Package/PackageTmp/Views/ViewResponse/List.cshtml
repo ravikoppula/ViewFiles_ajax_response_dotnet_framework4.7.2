@@ -1,0 +1,93 @@
+﻿@{
+    ViewBag.Title = "View Files";
+}
+
+
+<div class="container">
+
+    <div class="form-group">
+        <label>Select Date</label>
+        <input type="date" class="form-control date" id="txtDate" onchange="populateFiles()" aria-describedby="dateHelp" placeholder="Select Date">
+        <small id="dateHelp" class="form-text text-muted">Please select date to view the response files</small>
+    </div>
+     
+    <label>Choose File to Download</label>
+    <div class="form-group">
+        <select id="fileList" name="fileList" multiple="multiple" style="min-height:25%; min-width:50%;"></select>
+    </div>
+
+    <button type="submit" id="btnDownload" class="btn btn-primary">Download</button>
+    <button type="submit" id="btnCancel" class="btn btn-primary">Cancel</button>
+
+</div>
+
+<script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+<script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+
+<script type="text/javascript">
+     
+    $(function () {
+
+        $("#txtDate").change(function () {
+            
+            populateFiles();
+        });
+
+    });
+
+    function populateFiles() {
+
+        var selectedDate = $("#txtDate").val();
+        
+        $.ajax({
+            
+            url: "@Url.Action("GetFiles", "ViewResponse")",
+            type: 'GET',
+            dataType: "json",
+            data: { date: selectedDate },
+            success: function (data) {
+
+                var fileList = $("#fileList");
+                fileList.empty();
+
+                if (data != null || data != 'undefined' || data != "") {
+                    $.each(data, function (index, fileName) {
+                        fileList.append($("<option>", {
+                            value: fileName,
+                            text: fileName
+                        }));
+                    });
+                } else {
+                    alert("there were no files foud for the selected dates!");
+                }
+            }
+        });
+    }
+
+    // Handle file selection change
+    var $SelectedFile = "";
+    $("#fileList").change(function () {
+        $SelectedFile = $(this).val();
+        
+    });
+
+    $("#btnDownload").click(function () {
+         
+        var encodedFilenames = encodeURIComponent($SelectedFile);
+        var downloadUrl = '/ViewResponse/Download?filenames=' + encodedFilenames;
+
+        //Create a temporary <a> element and trigger the download
+        var a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = $SelectedFile;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+    });
+
+
+</script>
+

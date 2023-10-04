@@ -1,0 +1,129 @@
+﻿@{
+    ViewBag.Title = "View Files";
+}
+
+
+@{
+    string appPath = HttpContext.Current.Request.ApplicationPath;
+
+    if (appPath == "/")
+    {
+        appPath = "";
+    }
+}
+
+<div class="container">
+
+    <div class="alert alert-success col-md-12" role="alert" id="divErr" style="width: fit-content">
+        <Label id="lblErr" class="text-danger"></Label>
+    </div>
+
+    <div class="form-group">
+        <label>Select Date</label>
+        <input type="date" class="form-control date" id="txtDate" onchange="populateFiles()" aria-describedby="dateHelp" placeholder="Select Date">
+        <small id="dateHelp" class="form-text text-muted">Please select date to view the response files</small>
+    </div>
+
+    <label>Choose File to Download</label>
+    <div class="form-group">
+        <select id="fileList" name="fileList" multiple="multiple" style="min-height:25%; min-width:50%;"></select>
+    </div>
+
+    <button type="submit" id="btnDownload" class="btn btn-success btn-sm">Download</button>
+    <a class="btn btn-outline-secondary btn-sm" href="/eservices/Processing.aspx">Cancel</a>
+    <a class="btn btn-outline-danger btn-sm" href="/eservices/Main.aspx">Go back to Main Page</a>
+
+</div>
+
+<script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+<script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+
+<script type="text/javascript">
+
+    $(function () {
+
+        $("#divErr").hide();
+
+        // Get the current date
+        var currentDate = new Date();
+
+        // Format the date as desired (e.g., "YYYY-MM-DD")
+        var formattedDate = currentDate.toISOString().substr(0, 10);
+
+        // Set the value of the textbox
+        $("#txtDate").val(formattedDate);
+
+        populateFiles();
+
+        $("#txtDate").change(function () {
+
+            populateFiles();
+        });
+
+    });
+
+    function populateFiles() {
+
+        var selectedDate = $("#txtDate").val();
+
+        $.ajax({
+
+            url: "@Url.Action("GetFiles", "ViewResponse")",
+            type: 'GET',
+            dataType: "json",
+            data: { date: selectedDate },
+            success: function (data) {
+
+                var fileList = $("#fileList");
+                fileList.empty();
+
+                if (data.indexOf("Error:") !== -1) {
+
+                    $("#divErr").show(); $("#lblErr").text(data);
+                }
+                else if (data.length > 0 && data != []) {
+
+                    $("#divErr").hide(); $("#lblErr").text("");
+
+                    $.each(data, function (index, fileName) {
+
+                        fileList.append($("<option>", {
+
+                            value: fileName, text: fileName
+
+                        }));
+                    });
+                } 
+                else { 
+                    $("#divErr").show(); $("#lblErr").text("There were no files found for the selected date: " + selectedDate);
+                }
+            }
+        });
+    };
+
+    // Handle file selection change
+    var $SelectedFile = "";
+    $("#fileList").change(function () {
+        $SelectedFile = $(this).val();
+
+    });
+
+    $("#btnDownload").click(function () {
+
+        var encodedFilenames = encodeURIComponent($SelectedFile);
+        var downloadUrl = '@appPath/ViewResponse/Download?filenames=' + encodedFilenames;
+
+        //Create a temporary <a> element and trigger the download
+        var a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = $SelectedFile;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+    });
+
+</script>
+
